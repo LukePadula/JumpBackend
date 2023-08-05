@@ -1,61 +1,70 @@
 const express = require("express");
 const router = express.Router();
-const notes = require("../Data/notes.json");
-const templates = require("../Data/templates.json");
+const generateId = require("../Utils/Utils");
+const { noteFormatData } = require("../Utils/formatData");
 
-// Example : http://localhost:6001/records/note?id=2
-router.get("/:object", (req, res) => {
+const runQuery = require("../database/connection");
+const {
+  createRecord,
+  updateRecord,
+  deleteRecord,
+  getRecords,
+} = require("../queries/recordQueries");
+
+// Example : http://localhost:6001/records/notes?id=2
+router.get("/:object", async (req, res) => {
+  const { object } = req.params;
+
+  console.log(req.query, "HELLO");
+  const { id } = req.query;
+
+  const responseData = await runQuery(getRecords(object, id));
+  const data = noteFormatData(responseData);
+  res.status(200).send(data);
+});
+
+router.post("/:object", async (req, res) => {
   const { object } = req.params;
   const { id } = req.query;
-  let records = [];
+  let insertResults;
+  let query;
 
-  console.log(req.params, "Route");
+  console.log(id, "ID");
+  console.log(req.body.template, "REQ BODy");
 
-  if (object === "note") {
-    records = notes;
+  if (id) {
+    query = updateRecord(object, id, req.body);
   } else {
-    records = templates;
+    query = createRecord(object, req.body);
   }
+  console.log(query, "QUERY");
 
-  if (id) {
-    const index = records.findIndex((item) => item.id === id);
-    _records = [...records];
-    records = _records[index];
+  try {
+    insertResults = await runQuery(query);
+  } catch (error) {
+    res.status(500).send("Failed to insert record");
   }
+  console.log(insertResults, "RE");
+  let recordId = id ? id : insertResults.insertId;
 
-  res.send(records);
-});
+  try {
+    const queryResults = await runQuery(getRecords(object, recordId));
 
-router.post("/:object", (req, res) => {
-  const { object } = req.params;
-  const { id } = req.query;
-  console.log("post");
+    console.log(queryResults, "TEST");
+    const data = noteFormatData(queryResults);
 
-  console.log(req.headers);
-
-  console.log(req.body, "BODY");
-  res.send("yo");
-
-  //If Id update, else create
-  if (id) {
+    res.status(200).send(data);
+  } catch (error) {
+    res.status(500).send("Failed to query record");
   }
 });
 
-router.delete("/:object/:id", (req, res) => {
+router.delete("/:object/:id", async (req, res) => {
   const { object, id } = req.params;
-  records = [];
 
-  if (object === "note") {
-    records = notes;
-  } else {
-    records = templates;
-  }
-
-  const index = records.findIndex((item) => item.id === id);
-  _records = [...records];
-  records = _records[index];
-
-  res.send(`${id} has been deleted`);
+  console.log(object, id);
+  const results = await runQuery(deleteRecord(object, id));
+  res.status(200).send(`${id} has been deleted`);
 });
 
 module.exports = router;
