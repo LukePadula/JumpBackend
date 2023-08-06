@@ -6,7 +6,6 @@ module.exports = {
       query += `VALUES ("${textBlock.type}", "${textBlock.data.text}", "${noteId}")`;
     });
 
-    console.log(query);
     return query;
   },
 

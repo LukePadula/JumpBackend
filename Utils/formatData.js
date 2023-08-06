@@ -20,8 +20,6 @@ const noteFormatData = (data) => {
     });
   });
 
-  console.log(formattedData);
-
   return formattedData;
 };
 
