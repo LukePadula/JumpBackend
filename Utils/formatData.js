@@ -1,8 +1,22 @@
+const formatDataHandler = (object, data) => {
+  switch (object) {
+    case "notes":
+      return noteFormatData(data);
+    case "templates":
+      return templateFormatData(data);
+    case "events":
+      return eventFormatData(data);
+    default:
+      break;
+  }
+};
+
 const noteFormatData = (data) => {
   const formattedData = [];
 
   data.forEach((record) => {
-    const { id, title, description, templateId, templateTitle } = record;
+    const { id, title, description, templateId, templateTitle, content } =
+      record;
 
     formattedData.push({
       id,
@@ -16,7 +30,7 @@ const noteFormatData = (data) => {
         id: "",
         title: "",
       },
-      content: [],
+      content,
     });
   });
 
@@ -27,7 +41,15 @@ const templateFormatData = (data) => {
   const formattedData = [];
 
   data.forEach((record) => {
-    const { id, title, description, templateId, templateTitle } = record;
+    const {
+      id,
+      title,
+      description,
+      templateId,
+      templateTitle,
+      created,
+      modified,
+    } = record;
 
     formattedData.push({
       id,
@@ -57,4 +79,9 @@ const eventFormatData = (data) => {
   return formattedData;
 };
 
-module.exports = { noteFormatData, templateFormatData, eventFormatData };
+module.exports = {
+  formatDataHandler,
+  noteFormatData,
+  templateFormatData,
+  eventFormatData,
+};

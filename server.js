@@ -6,11 +6,22 @@ const cors = require("cors");
 const tokenAuth = require("./middleware/auth");
 const cookieParser = require("cookie-parser");
 
-app.use(cors());
+app.use(
+  cors({
+    credentials: true,
+    exposedHeaders: ["token"],
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:3001",
+    ],
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
-// app.use(logging);
+// app.use(logging);Ca
 
 app.use("/records", tokenAuth, require("./routes/records"));
 app.use("/summary", tokenAuth, require("./routes/summary"));

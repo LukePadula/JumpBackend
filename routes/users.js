@@ -16,7 +16,7 @@ router.post("/signup", async (req, res) => {
   const id = generateId();
 
   try {
-    response = await runQuery(insertUser(id, email, shaPassword));
+    response = await runQuery(insertUser(), [id, email, shaPassword]);
     res.status(200).send("Inserted user");
   } catch (error) {
     console.log(error);
@@ -27,16 +27,12 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   const shaPassword = sha256(password);
-  res.cookie("HI", "HELLO");
-
-  console.log(JSON.stringify(req.cookie), "REQBODY");
 
   try {
-    results = await runQuery(checkUserCredentials(email, shaPassword));
-    console.log(results, "RESULTS");
+    results = await runQuery(checkUserCredentials(), [email, shaPassword]);
     if (results.length > 0) {
       const token = generateId();
-      results = await runQuery(insertToken(results[0].id, token));
+      results = await runQuery(insertToken(), [results[0].id, token]);
       res.cookie("token", token);
       console.log("Successfully logged in ");
       res.status(200).send(token);
