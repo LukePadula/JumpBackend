@@ -35,9 +35,9 @@ router.post("/login", async (req, res) => {
       results = await runQuery(insertToken(), [results[0].id, token]);
       res.cookie("token", token);
       console.log("Successfully logged in ");
-      res.status(200).send(token);
+      res.status(200).send({ status: "authorised", token });
     } else {
-      res.status(200).send("Denied access");
+      res.status(200).send({ status: "denied" });
     }
   } catch (error) {
     console.log(error);

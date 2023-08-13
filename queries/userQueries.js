@@ -16,6 +16,8 @@ module.exports = {
   },
 
   checkToken: (token) => {
-    return `SELECT user_id FROM tokens WHERE token LIKE ?;`;
+    const params = [token];
+    const query = `SELECT user_id FROM tokens WHERE token LIKE ?;`;
+    return { query, params };
   },
 };

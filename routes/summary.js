@@ -2,48 +2,60 @@ const express = require("express");
 const router = express.Router();
 const runQuery = require("../database/connection");
 const {
-  getNoteSummary,
   insertNoteSummary,
   deleteNoteSummary,
+  getNoteSummary,
 } = require("../queries/summaryQueries");
+const { getRecords } = require("../queries/recordQueries");
+const { generateId } = require("../Utils/Utils");
 
 router.post("/:id", async (req, res) => {
   const { id } = req.params;
-  const { content } = req.body;
+  let questionSummary;
+  let positiveSummary;
+  let negativeSummary;
+  let recordData;
 
-  const questionSummary = [];
-  const positiveSummary = [];
-  const negativeSummary = [];
+  try {
+    const { query, params } = getRecords("notes", id, req.authorisedUserId);
+    recordData = await runQuery(query, params);
+    // const results = await runQuery(getNoteSummary(id));
+  } catch (error) {}
 
-  content.forEach((block) => {
-    if (element.data.text) {
-      switch (element.type) {
-        case "question":
-          //Insert
+  try {
+    const { query, params } = deleteNoteSummary(id, req.authorisedUserId);
+    const deleteResult = await runQuery(query, params);
+  } catch (error) {}
 
-          break;
-        case "positive":
-          positiveSummary.push(element.data.text);
-          break;
-        case "negative":
-          negativeSummary.push(element.data.text);
-          break;
-        default:
-          break;
-      }
+  const content = JSON.parse(recordData[0].content);
+  if (Array.isArray(content)) {
+    for (const block of content) {
+      const { query, params } = insertNoteSummary(
+        generateId(),
+        block.type,
+        block.data.text,
+        id
+      );
+      const insertRecord = await runQuery(query, params);
     }
-  });
+  }
+  let summaryData;
+  try {
+    const { query, params } = getNoteSummary(id);
+    console.log(query, params);
+    summaryData = await runQuery(query, params);
+  } catch (error) {}
 
-  const deletionResults = await runQuery(deleteNoteSummary(id));
-  const results = await runQuery(insertNoteSummary(id, content));
-
-  res.status(200).send(results);
+  res.send(summaryData);
 });
 
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  const results = await runQuery(getNoteSummary(id));
-
+  try {
+    const { query, params } = getNoteSummary(id, req.authorisedUserId);
+    console.log(query, params);
+    summaryData = await runQuery(query, params);
+  } catch (error) {}
   res.status(200).send(results);
 });
 

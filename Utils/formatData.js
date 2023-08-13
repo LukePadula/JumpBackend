@@ -1,3 +1,5 @@
+const logger = require("../middleware/logging");
+
 const formatDataHandler = (object, data) => {
   switch (object) {
     case "notes":

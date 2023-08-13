@@ -1,12 +1,9 @@
 module.exports = {
-  getRecords: (object, id) => {
+  getRecords: (object, id, authorisedUserId) => {
     let query;
     const params = [];
     if (object === "notes") {
-      query = `SELECT notes.id AS id, notes.title AS title, notes.description AS description, notes.content as content, notes.template_id as template, notes.created_date AS created, notes.last_modified_date AS modified, templates.id AS templateId, templates.title AS templateTitle
-                  FROM notes 
-                    LEFT JOIN templates 
-                      ON notes.template_id = templates.id`;
+      query = `SELECT notes.id AS id, notes.title AS title, notes.description AS description, notes.content as content, notes.template_id as template, UNIX_TIMESTAMP(notes.created_date) AS created, UNIX_TIMESTAMP(notes.last_modified_date) AS modified, templates.id AS templateId, templates.title AS templateTitle FROM notes LEFT JOIN templates ON notes.template_id = templates.id`;
     } else if (object === "templates") {
       query = `SELECT id, title, description 
                 FROM templates`;
@@ -17,15 +14,15 @@ module.exports = {
 
     if (id && (object === "notes" || object === "templates")) {
       params.push(id.replace(/"/g, ""));
-      console.log(params);
-      query += ` WHERE ${object}.id = ?`;
+      query += ` WHERE ${object}.id = ? AND  ${object}.user_id = ?;`;
+    } else {
+      query += ` WHERE ${object}.user_id = ?;`;
     }
-    query += ";";
+    params.push(authorisedUserId);
     return { query, params };
   },
 
-  updateRecord: (object, id, body) => {
-    console.log(body);
+  updateRecord: (object, id, body, authorisedUserId) => {
     const { title, description, template, event, content } = body;
     const updateFields = [];
     const params = [];
@@ -52,62 +49,55 @@ module.exports = {
       }
     }
 
-    if (content.content.length > 0) {
+    if (Array.isArray(content) && content.length > 0) {
       updateFields.push(`\`content\` = ?`);
-      params.push(JSON.stringify(content.content));
+      params.push(JSON.stringify(content));
     }
+    params.push(id.replace(/"/g, ""));
+    params.push(authorisedUserId);
 
     if (updateFields.length) {
       query = `UPDATE \`${object}\` SET ${updateFields.join(
         ", "
-      )} WHERE id = ${id} `;
+      )} WHERE id = ? AND user_id = ?  `;
 
       return { query, params };
     }
   },
 
-  createRecord: (object, body) => {
-    console.log(body);
+  createRecord: (object, body, authorisedUserId) => {
     const { title, description, template, event } = body;
+    console.log(body, "BODY");
+    const insertFields = [];
     const params = [];
     let query;
-
-    if (title) {
-      params.push(title);
-    }
-
-    if (description) {
-      params.push(description);
-    }
-
-    if (template) {
-      params.push(template);
-    }
-
-    if (event) {
-      params.push(event);
-    }
+    params.push(title);
+    params.push(description);
 
     if (object === "notes") {
-      // query = `INSERT INTO notes (\`id\`, \`title\`, \`description\` , \`template_id\` , \`event_id\`, user_id) VALUES (NULL, \'${title}\', \'${description}\', \'${template}\', \'${event}\', "${authorisedUserId}" )`;
-      query = `INSERT INTO notes (\`id\`, \`title\`, \`description\` , \`template_id\` , \`event_id\`, user_id) VALUES (NULL, ?, ?, ?, ?, ? )`;
+      params.push(template);
+      params.push(event);
+      query = `INSERT INTO notes (\`id\`, \`title\`, \`description\` , \`template_id\`, \`event_id\`, user_id) VALUES (NULL, ?, ?, ?, ?, ? )`;
     } else if (object === "templates") {
-      // query = `INSERT INTO templates (\`id\`, \`title\`, \`description\`, user_id) VALUES (NULL, \'${title}\', \'${description}\', "${authorisedUserId}")`;
       query = `INSERT INTO templates (\`id\`, \`title\`, \`description\`, user_id) VALUES (NULL, ?, ?, ?)`;
     } else {
       throw new Error("Invalid object name");
     }
 
+    // Set created and modified dates.
+    params.push(authorisedUserId);
+
     return { query, params };
   },
 
-  deleteRecord: (object, id) => {
+  deleteRecord: (object, id, authorisedUserId) => {
     const params = [];
     let query;
 
     if (id && (object === "notes" || object === "templates")) {
       params.push(id);
-      query = `DELETE FROM ${object} WHERE id = ?;`;
+      params.push(authorisedUserId);
+      query = `DELETE FROM ${object} WHERE id = ? AND user_id = ?;`;
     } else {
       throw new Error("Record ID not provided or invalid object name");
     }
