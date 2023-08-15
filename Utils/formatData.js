@@ -1,5 +1,4 @@
-const logger = require("../middleware/logging");
-
+//Handler for data formatter.
 const formatDataHandler = (object, data) => {
   switch (object) {
     case "notes":
@@ -17,8 +16,16 @@ const noteFormatData = (data) => {
   const formattedData = [];
 
   data.forEach((record) => {
-    const { id, title, description, templateId, templateTitle, content } =
-      record;
+    const {
+      id,
+      title,
+      description,
+      templateId,
+      templateTitle,
+      content,
+      eventId,
+      eventTitle,
+    } = record;
 
     formattedData.push({
       id,
@@ -29,8 +36,8 @@ const noteFormatData = (data) => {
         title: templateTitle,
       },
       event: {
-        id: "",
-        title: "",
+        id: eventId,
+        title: eventTitle,
       },
       content,
     });
@@ -43,21 +50,13 @@ const templateFormatData = (data) => {
   const formattedData = [];
 
   data.forEach((record) => {
-    const {
-      id,
-      title,
-      description,
-      templateId,
-      templateTitle,
-      created,
-      modified,
-    } = record;
+    const { id, title, description, content, created, modified } = record;
 
     formattedData.push({
       id,
       title,
-      created,
-      modified,
+      description,
+      content,
     });
   });
 

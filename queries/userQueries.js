@@ -1,7 +1,10 @@
 module.exports = {
-  insertUser: () => {
-    return `INSERT INTO users (id, email, password_hash) 
-              VALUES (?, ?, ?);`;
+  insertUser: (id, email, passwordHash) => {
+    const params = [id, email, passwordHash];
+    const query = `INSERT INTO users (id, email, password_hash) 
+                       VALUES (?, ?, ?);`;
+
+    return { query, params };
   },
 
   checkUserCredentials: () => {
@@ -9,15 +12,18 @@ module.exports = {
   },
 
   insertToken: (userId, token) => {
-    return `INSERT INTO tokens 
-                (user_id, token)
-                    VALUES
-                        (?, ?);`;
+    const params = [userId, token];
+    const query = `INSERT INTO tokens 
+                      (user_id, token)
+                        VALUES
+                          (?, ?);`;
+
+    return { query, params };
   },
 
   checkToken: (token) => {
     const params = [token];
-    const query = `SELECT user_id FROM tokens WHERE token LIKE ?;`;
+    const query = `SELECT user_id FROM tokens WHERE token = ?;`;
     return { query, params };
   },
 };

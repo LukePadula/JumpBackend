@@ -1,6 +1,5 @@
 module.exports = {
   getNoteSummary: (noteId) => {
-    console.log(noteId, "NOTE");
     const query = `SELECT topic, content FROM summaries WHERE note_id = ?`;
     const params = [noteId];
     return { query, params };

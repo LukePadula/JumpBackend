@@ -8,7 +8,7 @@ const {
   insertToken,
   checkToken,
 } = require("../queries/userQueries");
-const { generateId } = require("../Utils/Utils");
+const { generateId, generateToken } = require("../Utils/Utils");
 
 router.post("/signup", async (req, res) => {
   const { email, password } = req.body;
@@ -16,11 +16,18 @@ router.post("/signup", async (req, res) => {
   const id = generateId();
 
   try {
-    response = await runQuery(insertUser(), [id, email, shaPassword]);
-    res.status(200).send("Inserted user");
+    if (email === "" || password === "") {
+      throw new Error("No username or password");
+    }
+    const { query, params } = insertUser(id, email, shaPassword);
+    const response = await runQuery(query, params);
+
+    const token = await generateToken(id);
+    res.cookie("token", token);
+    res.status(200).send({ status: "authorised", token });
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Failed to insert user");
+    res.status(500).send(error);
+    return;
   }
 });
 
@@ -29,19 +36,23 @@ router.post("/login", async (req, res) => {
   const shaPassword = sha256(password);
 
   try {
-    results = await runQuery(checkUserCredentials(), [email, shaPassword]);
+    if (email === "" || password === "") {
+      throw new Error("No username or password");
+    }
+    const results = await runQuery(checkUserCredentials(), [
+      email,
+      shaPassword,
+    ]);
+
     if (results.length > 0) {
-      const token = generateId();
-      results = await runQuery(insertToken(), [results[0].id, token]);
+      const token = await generateToken(results[0].id);
       res.cookie("token", token);
-      console.log("Successfully logged in ");
       res.status(200).send({ status: "authorised", token });
     } else {
       res.status(200).send({ status: "denied" });
     }
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Failed to insert user");
+    res.status(500).send(error);
   }
 });
 module.exports = router;

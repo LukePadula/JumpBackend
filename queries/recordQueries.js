@@ -2,16 +2,18 @@ module.exports = {
   getRecords: (object, id, authorisedUserId) => {
     let query;
     const params = [];
+
     if (object === "notes") {
-      query = `SELECT notes.id AS id, notes.title AS title, notes.description AS description, notes.content as content, notes.template_id as template, UNIX_TIMESTAMP(notes.created_date) AS created, UNIX_TIMESTAMP(notes.last_modified_date) AS modified, templates.id AS templateId, templates.title AS templateTitle FROM notes LEFT JOIN templates ON notes.template_id = templates.id`;
+      query = `SELECT notes.id AS id, notes.title AS title, notes.description AS description, notes.content as content, notes.template_id as template, notes.event_id as event , UNIX_TIMESTAMP(notes.created_date) AS created, UNIX_TIMESTAMP(notes.last_modified_date) AS modified, templates.id AS templateId, templates.title AS templateTitle, templates.content AS templateContent, events.id AS eventId, events.title AS eventTitle FROM notes LEFT JOIN templates ON notes.template_id = templates.id LEFT JOIN events ON notes.event_id = events.id`;
     } else if (object === "templates") {
-      query = `SELECT id, title, description 
+      query = `SELECT id, title, description, content 
                 FROM templates`;
     } else if (object === "events") {
-      query = `SELECT id, title, status, start_date 
+      query = `SELECT id, title, status 
                 FROM events`;
     }
 
+    // If id is present and note or template. Query by individual ID. Else query all records belonging to user.
     if (id && (object === "notes" || object === "templates")) {
       params.push(id.replace(/"/g, ""));
       query += ` WHERE ${object}.id = ? AND  ${object}.user_id = ?;`;
@@ -33,7 +35,8 @@ module.exports = {
       params.push(title);
     }
 
-    if (description) {
+    // Will allow you to completley delete contents of field.
+    if (description != undefined) {
       updateFields.push(`\`description\` = ?`);
       params.push(description);
     }
@@ -49,6 +52,7 @@ module.exports = {
       }
     }
 
+    // If content is present. Update.
     if (Array.isArray(content) && content.length > 0) {
       updateFields.push(`\`content\` = ?`);
       params.push(JSON.stringify(content));
@@ -65,26 +69,30 @@ module.exports = {
     }
   },
 
-  createRecord: (object, body, authorisedUserId) => {
+  createRecord: (object, body, recordId, authorisedUserId, content) => {
     const { title, description, template, event } = body;
-    console.log(body, "BODY");
     const insertFields = [];
     const params = [];
     let query;
+
+    // Set default record values
+    params.push(recordId);
     params.push(title);
     params.push(description);
 
     if (object === "notes") {
-      params.push(template);
-      params.push(event);
-      query = `INSERT INTO notes (\`id\`, \`title\`, \`description\` , \`template_id\`, \`event_id\`, user_id) VALUES (NULL, ?, ?, ?, ?, ? )`;
+      params.push(template === undefined ? "" : template);
+      params.push(event === undefined ? "" : event);
+      params.push(content);
+
+      query = `INSERT INTO notes (id, title, description , template_id, event_id, content, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)`;
     } else if (object === "templates") {
-      query = `INSERT INTO templates (\`id\`, \`title\`, \`description\`, user_id) VALUES (NULL, ?, ?, ?)`;
+      query = `INSERT INTO templates (id, title, description, user_id) VALUES (?, ?, ?, ?)`;
     } else {
       throw new Error("Invalid object name");
     }
 
-    // Set created and modified dates.
+    // Set user id param.
     params.push(authorisedUserId);
 
     return { query, params };
@@ -97,7 +105,7 @@ module.exports = {
     if (id && (object === "notes" || object === "templates")) {
       params.push(id);
       params.push(authorisedUserId);
-      query = `DELETE FROM ${object} WHERE id = ? AND user_id = ?;`;
+      query = `DELETE FROM ${object} WHERE id = ? AND user_id = ? LIMIT 1;`;
     } else {
       throw new Error("Record ID not provided or invalid object name");
     }

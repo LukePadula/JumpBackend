@@ -1,6 +1,5 @@
 const { checkToken } = require("../queries/userQueries");
 const runQuery = require("../database/connection");
-const { param } = require("../routes/records");
 
 const tokenAuth = async (req, res, next) => {
   const { query, params } = checkToken(req.headers.token);
@@ -11,9 +10,7 @@ const tokenAuth = async (req, res, next) => {
     next();
     return;
   }
-  console.log("DENIED");
   res.status(400).send("Denied token");
-  next();
 };
 
 module.exports = tokenAuth;
